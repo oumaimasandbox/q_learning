@@ -98,7 +98,7 @@ class GridWorld:
 
 if __name__ == "__main__":
     grid_world = GridWorld()
-    grid_world.sarsa()  # Use SARSA instead of Q-learning
+    grid_world.sarsa() 
     policy = grid_world.get_policy()
     
     print("Learned policy with arrows (SARSA):")
