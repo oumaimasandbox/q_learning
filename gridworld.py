@@ -1,56 +1,119 @@
-import numpy as np 
+import numpy as np
 import random
 
 class GridWorld:
-    def __init__(self):
+    def __init__(self, gamma=0.9):
+         
         self.grid = np.array([
-            [0, 0, 10],
-            [0, -1, 0],
-            [0, 0, -10]])
-        self.actions = np.array([
-            [-1, 0],
-            [1, 0],
-            [0, -1],
-            [0, 1]])
-        self.x = random.randint(0, 2)
-        self.y = random.randint(0, 2)
-
-    def un_pas(self, action):
-        # make sure to give the position of the agent 
+            [10, 0, 0,0,0],
+            [0, 0, 0,-3,0],
+            [0, 0, -7,0,0],
+            [0,0,0,0,0],
+            [0,0,0,0,-10]
+        ])
+        
+        
+        self.actions =  np.array([
+            [10, 0, 0,0,0],
+            [0, 0, 0,-3,0],
+            [0, 0, -7,0,0],
+            [0,0,0,0,0],              
+            [0,0,0,0,-10]
+        ])
+        self.gamma = gamma  
+         
+        
+        self.value_function =np.ze
+    
+    def step(self, state, action):
+        
+        y, x = state
         ay, ax = self.actions[action]
-        # move the agent and check boundaries
-        self.y = max(0, min(self.y + ay, 2))
-        self.x = max(0, min(self.x + ax, 2))
+      
+        new_y = max(0, min(y + ay, 2))
+        new_x = max(0, min(x + ax, 2))
+    
+        return (new_y, new_x), self.grid[new_y, new_x]
+    
+    def is_final_state(self, state):
+        
+        y, x = state
+        return self.grid[y, x] == 10 or self.grid[y, x] == -10
 
-        grid_value = self.grid[self.y, self.x]
-        return self.y * 3 + self.x + 1, grid_value  # mapping
+    def value_iteration(self, theta=1e-6):
+        
+        while True: 
+            delta = 0
+            new_value_function = np.copy(self.value_function)
+ 
+            for y in range(self.grid.shape[0]):
+                for x in range(self.grid.shape[1]):
+                    state = (y, x)
+                    
+                    
+                    if self.is_final_state(state):
+                        continue
 
-    def is_final_state(self):
-        return self.grid[self.y, self.x] == 10 or self.grid[self.y, self.x] == -10
+                    v_max = -float('inf') 
+                    
+                    
+                    for action in range(len(self.actions)):
+                        next_state, reward = self.step(state, action)
+                        next_y, next_x = next_state
+                        action_value = reward + self.gamma * self.value_function[next_y, next_x]
+                        v_max = max(v_max, action_value)
 
-    def reinitialize(self):
-        self.x = random.randint(0, 2)
-        self.y = random.randint(0, 2)
-        return self.y * 3 + self.x + 1
+        
+                    new_value_function[y, x] = v_max
+               
+                    delta = max(delta, abs(self.value_function[y, x] - new_value_function[y, x]))
+            
+            self.value_function = new_value_function
+            
+        
+            if delta < theta:
+                break
 
+         
+        self.policy = np.zeros_like(self.grid, dtype=int)
+
+        
+        for y in range(self.grid.shape[0]):
+            for x in range(self.grid.shape[1]):
+                state = (y, x)
+
+                if self.is_final_state(state):
+                    continue
+
+                v_max = -float('inf')
+                best_action = None
+
+                for action in range(len(self.actions)):
+                    next_state, _ = self.step(state, action)
+                    next_y, next_x = next_state
+
+                    action_value = self.gamma * self.value_function[next_y, next_x]
+                    if action_value > v_max:
+                        v_max = action_value
+                        best_action = action
+
+                self.policy[y, x] = best_action
+        
+        print("Converged Value Function:")
+        print(np.round(self.value_function, decimals=2))
+
+        print("\nOptimal Policy:")
+        policy_symbols = {0: '↑', 1: '↓', 2: '←', 3: '→'}
+        policy_display = np.array([[policy_symbols[self.policy[y, x]] if not self.is_final_state((y, x)) else 'T'
+                                    for x in range(self.grid.shape[1])]
+                                    for y in range(self.grid.shape[0])])
+        print(policy_display)
+    
 
 if __name__ == "__main__":
-    # Create an instance of GridWorld
+ 
     grid_world = GridWorld()
-
-    # Display the initial position of the agent
-    print(f"Position initiale: {grid_world.y * 3 + grid_world.x + 1}")
-
-    # Take an action (e.g., action 0)
-    new_position, reward = grid_world.un_pas(0)
-    print(f"Nouvelle position: {new_position}, Récompense: {reward}")
-
-    # Check if the state is a final state
-    if grid_world.is_final_state():
-        print("État final atteint!")
-    else:
-        print("L'état n'est pas final.")
-
-    # Reinitialize the agent's state
-    position_reinitialisee = grid_world.reinitialize()
-    print(f"Position réinitialisée: {position_reinitialisee}")
+     
+    grid_world.value_iteration()
+   
+ 

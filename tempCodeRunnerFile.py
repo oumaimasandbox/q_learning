@@ -1,0 +1,1 @@
+     self.q_table = np.zeros((*self.grid.shape, len(self.actions)))
